@@ -84,7 +84,9 @@ const inputCls =
 
 export function Admin({ nav }: { nav: Nav }) {
   // Vercel/brauzerda birinchi marta kirganda ham login so'ramaydi
-  const [unlocked, setUnlocked] = useState(true);
+  const [unlocked, setUnlocked] = useState(() => {
+    return sessionStorage.getItem(AUTH_KEY) === "1";
+  });
   const [login, setLogin] = useState("");
   const [loginError, setLoginError] = useState(false);
   const [pwd, setPwd] = useState("");
