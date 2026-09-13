@@ -64,11 +64,17 @@ export default function App() {
         setIsAdmin(true);
       }
     } else {
-      // Vercel (brauzer) orqali kirilganda Admin bo'lib ochiladi
       setIsTelegramApp(false);
       setIsAdmin(true);
     }
   }, [MY_ADMIN_ID]);
+
+  // Agar Telegram Mini App ichida oddiy foydalanuvchi Admin sahifasiga o'tmoqchi bo'lsa, avtomatik Home'ga qaytarish
+  useEffect(() => {
+    if (page.name === "admin" && isTelegramApp && !isAdmin) {
+      setPage({ name: "home" });
+    }
+  }, [page, isTelegramApp, isAdmin]);
 
   // persist cart
   useEffect(() => {
