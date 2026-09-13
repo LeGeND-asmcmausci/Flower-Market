@@ -29,8 +29,8 @@ import {
  * password. It just keeps the panel from being one click away for casual
  * visitors. Change the password below to whatever you like.
  */
+const ADMIN_LOGIN = "admin";
 const ADMIN_PASSWORD = "1234";
-const ADMIN_LOGIN = "admin"
 const AUTH_KEY = "gullar-admin-auth";
 
 type FormState = {
