@@ -29,7 +29,8 @@ import {
  * password. It just keeps the panel from being one click away for casual
  * visitors. Change the password below to whatever you like.
  */
-const ADMIN_PASSWORD = "gullar2024";
+const ADMIN_PASSWORD = "1234";
+const ADMIN_LOGIN = "admin"
 const AUTH_KEY = "gullar-admin-auth";
 
 type FormState = {
@@ -89,6 +90,8 @@ const inputCls =
 
 export function Admin({ nav }: { nav: Nav }) {
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem(AUTH_KEY) === "1");
+  const [login, setLogin] = useState("");
+  const [loginError, setLoginError] = useState(false);
   const [pwd, setPwd] = useState("");
   const [pwdError, setPwdError] = useState(false);
 
@@ -102,12 +105,14 @@ export function Admin({ nav }: { nav: Nav }) {
 
   const unlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pwd === ADMIN_PASSWORD) {
+    if (pwd === ADMIN_PASSWORD && login === ADMIN_LOGIN) {
       sessionStorage.setItem(AUTH_KEY, "1");
       setUnlocked(true);
       setPwdError(false);
+      setLoginError(false);
     } else {
       setPwdError(true);
+      setLoginError(true);
     }
   };
 
@@ -179,9 +184,20 @@ export function Admin({ nav }: { nav: Nav }) {
         </span>
         <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight">Admin panel</h1>
         <p className="mt-2 text-sm text-ink-soft">
-          Guldastalarni qo'shish, tahrirlash yoki o'chirish uchun parolni kiriting.
+          Guldastalarni qo'shish, tahrirlash yoki o'chirish uchun login va parolni kiriting.
         </p>
         <form onSubmit={unlock} className="mt-8 w-full space-y-3">
+          <input
+            type="text"
+            autoFocus
+            value={login}
+            onChange={(e) => {
+              setLogin(e.target.value);
+              setLoginError(false);
+            }}
+            placeholder="Login"
+            className={cn(inputCls, "mt-0 text-center", loginError && "border-terra")}
+          />
           <input
             type="password"
             autoFocus
@@ -193,6 +209,7 @@ export function Admin({ nav }: { nav: Nav }) {
             placeholder="Parol"
             className={cn(inputCls, "mt-0 text-center", pwdError && "border-terra")}
           />
+          {loginError && <p className="text-xs font-bold text-terra">Login noto'g'ri, qayta urinib ko'ring.</p>}
           {pwdError && <p className="text-xs font-bold text-terra">Parol noto'g'ri, qayta urinib ko'ring.</p>}
           <button
             type="submit"
