@@ -89,10 +89,9 @@ const inputCls =
   "mt-2 w-full rounded-xl border border-ink/15 bg-cream px-4 py-3 text-sm focus:border-terra focus:outline-none";
 
 export function Admin({ nav }: { nav: Nav }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem(AUTH_KEY) === "1");
   const [login, setLogin] = useState("");
-  const [loginError, setLoginError] = useState(false);
+  const [loginError, setLoginError] = useState(true);
   const [pwd, setPwd] = useState("");
   const [pwdError, setPwdError] = useState(false);
 
