@@ -148,6 +148,20 @@ export const IconCheck = ({ className }: IconProps) => (
   </svg>
 );
 
+export const IconEdit = ({ className }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...S}>
+    <path d="M16.5 3.5 20.5 7.5 8 20H4v-4L16.5 3.5Z" />
+    <path d="M14 6 18 10" />
+  </svg>
+);
+
+export const IconLock = ({ className }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...S}>
+    <rect x="5" y="10.5" width="14" height="9.5" rx="2" />
+    <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+  </svg>
+);
+
 export const IconDrop = ({ className }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...S}>
     <path d="M12 3.5S6 10 6 14.5a6 6 0 0 0 12 0C18 10 12 3.5 12 3.5Z" />

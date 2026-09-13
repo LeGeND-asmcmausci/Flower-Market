@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Nav } from "../Utils/types";
-import { CATEGORIES, PRODUCTS, px, type Product } from "../Data/Products";
+import { CATEGORIES, px, type Product } from "../Data/Products";
+import { useProducts } from "../Data/Store";
 import { ProductCard } from "../Components/ProductCard";
 import {
   IconArrow,
@@ -75,7 +76,8 @@ export function Home({
   onOpen: (p: Product) => void;
   onAdd: (p: Product) => void;
 }) {
-  const hits = PRODUCTS.filter((p) => p.tag === "hit" || p.tag === "new").slice(0, 8);
+  const products = useProducts();
+  const hits = products.filter((p) => p.tag === "hit" || p.tag === "new").slice(0, 8);
   const [email, setEmail] = useState("");
   const [subbed, setSubbed] = useState(false);
 

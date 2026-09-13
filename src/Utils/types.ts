@@ -7,6 +7,7 @@ export type Page =
   | { name: "cart" }
   | { name: "about" }
   | { name: "contact" }
-  | { name: "success"; orderId: string };
+  | { name: "success"; orderId: string }
+  | { name: "admin" };
 
 export type Nav = (page: Page) => void;

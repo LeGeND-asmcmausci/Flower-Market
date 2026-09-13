@@ -104,12 +104,15 @@ export function Footer({ nav }: { nav: Nav }) {
           </ul>
         </div>
       </div>
-      <div className="relative border-t border-cream/10">
+            <div className="relative border-t border-cream/10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-cream/50 md:flex-row md:px-8">
           <p>© 2025 GULLAR. Barcha huquqlar himoyalangan.</p>
           <p>
             React + Tailwind CSS bilan <span className="text-rose">qo'l mehnati</span> bilan yaratildi
           </p>
+          <button onClick={() => nav({ name: "admin" })} className="transition-colors hover:text-cream">
+            Admin
+          </button>
         </div>
       </div>
     </footer>

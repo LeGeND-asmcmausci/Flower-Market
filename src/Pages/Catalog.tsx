@@ -4,12 +4,12 @@ import type { Nav } from "../Utils/types";
 import {
   CATEGORIES,
   COLORS,
-  PRODUCTS,
   formatPrice,
   type CategoryKey,
   type ColorKey,
   type Product,
 } from "../Data/Products";
+import { useProducts } from "../Data/Store";
 import { ProductCard } from "../Components/ProductCard";
 import { IconFlower, IconSearch, IconX, Reveal } from "../Components/Ui";
 
@@ -43,15 +43,16 @@ export function Catalog({
   const [colors, setColors] = useState<ColorKey[]>([]);
   const [sort, setSort] = useState<SortKey>("popular");
   const [showFilters, setShowFilters] = useState(false);
+  const products = useProducts();
 
   const counts = useMemo(() => {
-    const map: Record<string, number> = { all: PRODUCTS.length };
-    CATEGORIES.forEach((c) => (map[c.key] = PRODUCTS.filter((p) => p.category === c.key).length));
+    const map: Record<string, number> = { all: products.length };
+    CATEGORIES.forEach((c) => (map[c.key] = products.filter((p) => p.category === c.key).length));
     return map;
-  }, []);
+  }, [products]);
 
   const filtered = useMemo(() => {
-    let list = PRODUCTS.filter((p) => p.price <= maxPrice);
+    let list = products.filter((p) => p.price <= maxPrice);
     if (category !== "all") list = list.filter((p) => p.category === category);
     if (colors.length) list = list.filter((p) => p.colors.some((c) => colors.includes(c)));
     if (query.trim()) {
@@ -78,8 +79,8 @@ export function Catalog({
       default:
         arr.sort((a, b) => b.reviews - a.reviews);
     }
-    return arr;
-  }, [category, query, maxPrice, colors, sort]);
+        return arr;
+  }, [products, category, query, maxPrice, colors, sort]);
 
   const activeCount =
     (category !== "all" ? 1 : 0) + (maxPrice < MAX_PRICE ? 1 : 0) + colors.length + (query ? 1 : 0);

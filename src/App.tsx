@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { PRODUCTS, type Product } from "./Data/Products";
+import { type Product } from "./Data/Products";
+import { useProducts } from "./Data/Store";
 import type { Page } from "./Utils/types";
 import { Header } from "./Components/Header";
 import { Footer } from "./Components/Footer";
@@ -8,6 +9,7 @@ import { Catalog } from "./Pages/Catalog";
 import { ProductDetail } from "./Pages/ProductDetail";
 import { Cart } from "./Pages/Cart";
 import { About, Contact, OrderSuccess } from "./Pages/InfoPages";
+import { Admin } from "./Pages/Admin";
 import { IconCheck } from "./Components/Ui";
 
 type CartMap = Record<number, number>;
@@ -26,6 +28,7 @@ export default function App() {
   const [page, setPage] = useState<Page>({ name: "home" });
   const [cart, setCart] = useState<CartMap>(loadCart);
   const [toast, setToast] = useState<string | null>(null);
+  const products = useProducts();
 
   // persist cart
   useEffect(() => {
@@ -63,14 +66,17 @@ export default function App() {
     setToast(`«${p.name}» savatga qo'shildi`);
   }, []);
 
-  const setQty = useCallback((id: number, qty: number) => {
-    setCart((prev) => {
-      const next = { ...prev };
-      if (qty <= 0) delete next[id];
-      else next[id] = Math.min(PRODUCTS.find((p) => p.id === id)?.stock ?? 99, qty);
-      return next;
-    });
-  }, []);
+    const setQty = useCallback(
+    (id: number, qty: number) => {
+      setCart((prev) => {
+        const next = { ...prev };
+        if (qty <= 0) delete next[id];
+        else next[id] = Math.min(products.find((p) => p.id === id)?.stock ?? 99, qty);
+        return next;
+      });
+    },
+    [products]
+  );
 
   const remove = useCallback((id: number) => {
     setCart((prev) => {
@@ -85,10 +91,11 @@ export default function App() {
   const cartItems = useMemo(
     () =>
       Object.entries(cart)
-        .map(([id, qty]) => ({ product: PRODUCTS.find((p) => p.id === Number(id))!, qty }))
+        .map(([id, qty]) => ({ product: products.find((p) => p.id === Number(id))!, qty }))
         .filter((it) => it.product),
-    [cart]
+    [cart, products]
   );
+
   const cartCount = cartItems.reduce((s, it) => s + it.qty, 0);
 
   const openProduct = useCallback((p: Product) => setPage({ name: "product", id: p.id }), []);
@@ -113,7 +120,7 @@ export default function App() {
 
         {page.name === "product" &&
           (() => {
-            const product = PRODUCTS.find((p) => p.id === page.id);
+            const product = products.find((p) => p.id === page.id);
             if (!product) return null;
             return (
               <ProductDetail
@@ -133,6 +140,7 @@ export default function App() {
         {page.name === "about" && <About nav={nav} />}
         {page.name === "contact" && <Contact nav={nav} />}
         {page.name === "success" && <OrderSuccess orderId={page.orderId} nav={nav} />}
+        {page.name === "admin" && <Admin nav={nav} />}
       </main>
 
       <Footer nav={nav} />

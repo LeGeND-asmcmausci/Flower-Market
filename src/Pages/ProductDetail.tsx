@@ -2,13 +2,13 @@ import { useMemo, useState } from "react";
 import { cn } from "../Utils/Cn";
 import type { Nav } from "../Utils/types";
 import {
-  PRODUCTS,
   TAG_LABEL,
   categoryLabel,
   colorInfo,
   formatPrice,
   type Product,
 } from "../Data/Products";
+import { useProducts } from "../Data/Store";
 import { ProductCard } from "../Components/ProductCard";
 import {
   IconArrow,
@@ -37,11 +37,12 @@ export function ProductDetail({
 }) {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const products = useProducts();
 
   const related = useMemo(
     () =>
-      PRODUCTS.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4),
-    [product]
+      products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4),
+    [products, product]
   );
 
   const discount = product.oldPrice ? Math.round((1 - product.price / product.oldPrice) * 100) : 0;
