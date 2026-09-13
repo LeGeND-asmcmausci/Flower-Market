@@ -45,6 +45,7 @@ export default function App() {
   const MY_ADMIN_ID = 8482605175;
 
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isTelegramApp, setIsTelegramApp] = useState<boolean>(false);
   const [page, setPage] = useState<Page>({ name: "home" });
   const [cart, setCart] = useState<CartMap>(loadCart);
   const [toast, setToast] = useState<string | null>(null);
@@ -53,13 +54,19 @@ export default function App() {
   // Telegram foydalanuvchisini tekshirish
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      const currentUserId = tg.initDataUnsafe?.user?.id;
 
+    if (tg && tg.initDataUnsafe?.user) {
+      setIsTelegramApp(true);
+      tg.ready();
+
+      const currentUserId = tg.initDataUnsafe?.user?.id;
       if (currentUserId === MY_ADMIN_ID) {
         setIsAdmin(true);
       }
+    } else {
+      // Vercel (brauzer) orqali kirilganda Admin bo'lib ochiladi
+      setIsTelegramApp(false);
+      setIsAdmin(true);
     }
   }, [MY_ADMIN_ID]);
 
@@ -176,7 +183,13 @@ export default function App() {
         {page.name === "success" && <OrderSuccess orderId={page.orderId} nav={nav} />}
 
         {/* Admin sahifasi faqat Telegram ID sizniki bo'lganda ochiladi */}
-        {page.name === "admin" && (isAdmin ? <Admin nav={nav} /> : <Home nav={nav} onOpen={openProduct} onAdd={addToCart} />)}
+        {page.name === "admin" && (
+          isTelegramApp && !isAdmin ? (
+            <Home nav={nav} onOpen={openProduct} onAdd={addToCart} />
+          ) : (
+            <Admin nav={nav} />
+          )
+        )}
       </main>
 
       <Footer nav={nav} />
