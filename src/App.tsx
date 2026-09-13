@@ -42,8 +42,8 @@ function loadCart(): CartMap {
 
 export default function App() {
   // Telegram @userinfobot bergandagi shaxsiy ID-ingizni bu yerga yozing
-  const MY_ADMIN_ID = 8482605175; 
-  
+  const MY_ADMIN_ID = 8482605175;
+
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [page, setPage] = useState<Page>({ name: "home" });
   const [cart, setCart] = useState<CartMap>(loadCart);
@@ -56,11 +56,12 @@ export default function App() {
     if (tg) {
       tg.ready();
       const currentUserId = tg.initDataUnsafe?.user?.id;
+
       if (currentUserId === MY_ADMIN_ID) {
         setIsAdmin(true);
       }
     }
-  }, []);
+  }, [MY_ADMIN_ID]);
 
   // persist cart
   useEffect(() => {
@@ -173,7 +174,7 @@ export default function App() {
         {page.name === "about" && <About nav={nav} />}
         {page.name === "contact" && <Contact nav={nav} />}
         {page.name === "success" && <OrderSuccess orderId={page.orderId} nav={nav} />}
-        
+
         {/* Admin sahifasi faqat Telegram ID sizniki bo'lganda ochiladi */}
         {page.name === "admin" && (isAdmin ? <Admin nav={nav} /> : <Home nav={nav} onOpen={openProduct} onAdd={addToCart} />)}
       </main>
@@ -183,9 +184,8 @@ export default function App() {
       {/* Toast */}
       <div
         aria-live="polite"
-        className={`fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 transition-all duration-400 ${
-          toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
-        }`}
+        className={`fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 transition-all duration-400 ${toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
+          }`}
       >
         <div className="flex items-center gap-3 rounded-full bg-ink px-6 py-3.5 text-sm font-bold text-cream shadow-2xl">
           <span className="grid h-6 w-6 place-items-center rounded-full bg-leaf">
