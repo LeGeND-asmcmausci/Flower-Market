@@ -12,6 +12,22 @@ import { About, Contact, OrderSuccess } from "./Pages/InfoPages";
 import { Admin } from "./Pages/Admin";
 import { IconCheck } from "./Components/Ui";
 
+// Telegram Web App global obyektini TypeScript tanishi uchun
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: {
+        ready: () => void;
+        initDataUnsafe?: {
+          user?: {
+            id: number;
+          };
+        };
+      };
+    };
+  }
+}
+
 type CartMap = Record<number, number>;
 
 function loadCart(): CartMap {
@@ -25,10 +41,26 @@ function loadCart(): CartMap {
 }
 
 export default function App() {
+  // Telegram @userinfobot bergandagi shaxsiy ID-ingizni bu yerga yozing
+  const MY_ADMIN_ID = 8482605175; 
+  
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [page, setPage] = useState<Page>({ name: "home" });
   const [cart, setCart] = useState<CartMap>(loadCart);
   const [toast, setToast] = useState<string | null>(null);
   const products = useProducts();
+
+  // Telegram foydalanuvchisini tekshirish
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      const currentUserId = tg.initDataUnsafe?.user?.id;
+      if (currentUserId === MY_ADMIN_ID) {
+        setIsAdmin(true);
+      }
+    }
+  }, []);
 
   // persist cart
   useEffect(() => {
@@ -66,7 +98,7 @@ export default function App() {
     setToast(`«${p.name}» savatga qo'shildi`);
   }, []);
 
-    const setQty = useCallback(
+  const setQty = useCallback(
     (id: number, qty: number) => {
       setCart((prev) => {
         const next = { ...prev };
@@ -103,6 +135,7 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <div className="grain" aria-hidden />
+      {/* Header ga isAdmin parametrini uzatamiz (Header ichida admin tugmasini faqat isAdmin true bo'lsa ko'rsatasiz) */}
       <Header page={page} nav={nav} cartCount={cartCount} />
 
       <main>
@@ -140,7 +173,9 @@ export default function App() {
         {page.name === "about" && <About nav={nav} />}
         {page.name === "contact" && <Contact nav={nav} />}
         {page.name === "success" && <OrderSuccess orderId={page.orderId} nav={nav} />}
-        {page.name === "admin" && <Admin nav={nav} />}
+        
+        {/* Admin sahifasi faqat Telegram ID sizniki bo'lganda ochiladi */}
+        {page.name === "admin" && (isAdmin ? <Admin nav={nav} /> : <Home nav={nav} onOpen={openProduct} onAdd={addToCart} />)}
       </main>
 
       <Footer nav={nav} />
