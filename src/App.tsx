@@ -12,21 +12,6 @@ import { About, Contact, OrderSuccess } from "./Pages/InfoPages";
 import { Admin } from "./Pages/Admin";
 import { IconCheck } from "./Components/Ui";
 
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp?: {
-        ready: () => void;
-        initDataUnsafe?: {
-          user?: {
-            id: number;
-          };
-        };
-      };
-    };
-  }
-}
-
 type CartMap = Record<number, number>;
 
 function loadCart(): CartMap {
@@ -49,15 +34,14 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const products = useProducts();
 
-  // Telegram va Brauzer muhitini aniqlash
   useEffect(() => {
-    const tg = window.Telegram?.WebApp;
+    const tg = (window as any).Telegram?.WebApp;
 
     if (tg && tg.initDataUnsafe?.user) {
       setIsTelegramApp(true);
-      tg.ready();
+      tg.ready?.();
 
-      const currentUserId = tg.initDataUnsafe?.user?.id;
+      const currentUserId = tg.initDataUnsafe.user.id;
       if (currentUserId === MY_ADMIN_ID) {
         setIsAdmin(true);
       } else {
@@ -203,9 +187,8 @@ export default function App() {
       {/* Toast */}
       <div
         aria-live="polite"
-        className={`fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 transition-all duration-400 ${
-          toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
-        }`}
+        className={`fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 transition-all duration-400 ${toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
+          }`}
       >
         <div className="flex items-center gap-3 rounded-full bg-ink px-6 py-3.5 text-sm font-bold text-cream shadow-2xl">
           <span className="grid h-6 w-6 place-items-center rounded-full bg-leaf">

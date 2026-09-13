@@ -35,6 +35,15 @@ export function Header({ page, nav, cartCount }: { page: Page; nav: Nav; cartCou
     nav(p);
   };
 
+  // Telegram va Admin tekshiruvi (Komponent ichida bir marta elon qilinadi)
+  const tg = typeof window !== "undefined" ? (window as any).Telegram?.WebApp : undefined;
+  const isTelegram = Boolean(tg && tg.initDataUnsafe?.user);
+  const currentUserId = tg?.initDataUnsafe?.user?.id;
+  const MY_ADMIN_ID = 8482605175;
+
+  // Agar Telegram Mini App bo'lsa va foydalanuvchi Admin bo'lmasa -> Admin tugmasi yashiriladi
+  const showAdminButton = !isTelegram || currentUserId === MY_ADMIN_ID;
+
   return (
     <>
       {/* Announcement bar */}
@@ -93,6 +102,25 @@ export function Header({ page, nav, cartCount }: { page: Page; nav: Nav; cartCou
                 />
               </button>
             ))}
+
+            {/* Desktop menyuda Admin tugmasi */}
+            {showAdminButton && (
+              <button
+                onClick={() => go({ name: "admin" })}
+                className={cn(
+                  "group relative py-1 text-[13px] font-bold tracking-wide uppercase transition-colors",
+                  activeKey === "admin" ? "text-terra" : "text-ink/70 hover:text-ink"
+                )}
+              >
+                Admin
+                <span
+                  className={cn(
+                    "absolute -bottom-0.5 left-0 h-[2px] bg-terra transition-all duration-300",
+                    activeKey === "admin" ? "w-full" : "w-0 group-hover:w-full"
+                  )}
+                />
+              </button>
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -174,6 +202,20 @@ export function Header({ page, nav, cartCount }: { page: Page; nav: Nav; cartCou
                 <span className="text-sm opacity-50">0{i + 1}</span>
               </button>
             ))}
+
+            {/* Mobil menyuda Admin tugmasi */}
+            {showAdminButton && (
+              <button
+                onClick={() => go({ name: "admin" })}
+                className={cn(
+                  "flex items-center justify-between rounded-xl px-4 py-4 text-left font-display text-2xl font-medium transition-colors",
+                  activeKey === "admin" ? "bg-leaf text-cream" : "hover:bg-sand/60"
+                )}
+              >
+                Admin
+                <span className="text-sm opacity-50">05</span>
+              </button>
+            )}
           </nav>
           <div className="mt-auto border-t border-sand px-6 py-6 text-sm text-ink-soft">
             <p className="font-bold text-ink">Har kuni 08:00 — 21:00</p>
