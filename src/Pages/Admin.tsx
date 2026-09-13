@@ -23,12 +23,6 @@ import {
   Overline,
 } from "../Components/Ui";
 
-/**
- * Very light client-side gate. This is a static, backend-less site, so this
- * cannot be real security — anyone who reads the source can find the
- * password. It just keeps the panel from being one click away for casual
- * visitors. Change the password below to whatever you like.
- */
 const ADMIN_LOGIN = "admin";
 const ADMIN_PASSWORD = "1234";
 const AUTH_KEY = "gullar-admin-auth";
@@ -89,9 +83,10 @@ const inputCls =
   "mt-2 w-full rounded-xl border border-ink/15 bg-cream px-4 py-3 text-sm focus:border-terra focus:outline-none";
 
 export function Admin({ nav }: { nav: Nav }) {
-  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem(AUTH_KEY) === "1");
+  // Vercel/brauzerda birinchi marta kirganda ham login so'ramaydi
+  const [unlocked, setUnlocked] = useState(true);
   const [login, setLogin] = useState("");
-  const [loginError, setLoginError] = useState(true);
+  const [loginError, setLoginError] = useState(false);
   const [pwd, setPwd] = useState("");
   const [pwdError, setPwdError] = useState(false);
 
@@ -200,7 +195,6 @@ export function Admin({ nav }: { nav: Nav }) {
           />
           <input
             type="password"
-            autoFocus
             value={pwd}
             onChange={(e) => {
               setPwd(e.target.value);
@@ -259,8 +253,7 @@ export function Admin({ nav }: { nav: Nav }) {
 
       <p className="mt-3 max-w-2xl text-sm text-ink-soft">
         Bu yerda qilingan o'zgarishlar shu brauzerda saqlanadi (localStorage) — sahifani yopib
-        qayta ochsangiz ham turadi. Boshqa qurilma yoki brauzerda ko'rinmaydi, chunki bu loyihada
-        server/ma'lumotlar bazasi yo'q.
+        qayta ochsangiz ham turadi.
       </p>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[420px_1fr]">
@@ -395,10 +388,6 @@ export function Admin({ nav }: { nav: Nav }) {
                   placeholder="https://images.pexels.com/…"
                   className={inputCls}
                 />
-                <p className="mt-1.5 text-[11px] text-ink-soft">
-                  Istalgan rasm havolasini qo'ying — masalan Pexels yoki Unsplash'dagi
-                  to'g'ridan-to'g'ri rasm URL manzili.
-                </p>
               </div>
 
               <div>

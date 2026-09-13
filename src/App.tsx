@@ -12,7 +12,6 @@ import { About, Contact, OrderSuccess } from "./Pages/InfoPages";
 import { Admin } from "./Pages/Admin";
 import { IconCheck } from "./Components/Ui";
 
-// Telegram Web App global obyektini TypeScript tanishi uchun
 declare global {
   interface Window {
     Telegram?: {
@@ -41,7 +40,6 @@ function loadCart(): CartMap {
 }
 
 export default function App() {
-  // Telegram @userinfobot bergandagi shaxsiy ID-ingizni bu yerga yozing
   const MY_ADMIN_ID = 8482605175;
 
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -51,7 +49,7 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const products = useProducts();
 
-  // Telegram foydalanuvchisini tekshirish
+  // Telegram va Brauzer muhitini aniqlash
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
 
@@ -62,14 +60,17 @@ export default function App() {
       const currentUserId = tg.initDataUnsafe?.user?.id;
       if (currentUserId === MY_ADMIN_ID) {
         setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
       }
     } else {
+      // Vercel yoki oddiy brauzerda
       setIsTelegramApp(false);
       setIsAdmin(true);
     }
   }, [MY_ADMIN_ID]);
 
-  // Agar Telegram Mini App ichida oddiy foydalanuvchi Admin sahifasiga o'tmoqchi bo'lsa, avtomatik Home'ga qaytarish
+  // Telegram Mini App ichida oddiy foydalanuvchi Admin tugmasini bossa -> Darhol Home sahifasiga qaytariladi
   useEffect(() => {
     if (page.name === "admin" && isTelegramApp && !isAdmin) {
       setPage({ name: "home" });
@@ -149,7 +150,6 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <div className="grain" aria-hidden />
-      {/* Header ga isAdmin parametrini uzatamiz (Header ichida admin tugmasini faqat isAdmin true bo'lsa ko'rsatasiz) */}
       <Header page={page} nav={nav} cartCount={cartCount} />
 
       <main>
@@ -188,7 +188,7 @@ export default function App() {
         {page.name === "contact" && <Contact nav={nav} />}
         {page.name === "success" && <OrderSuccess orderId={page.orderId} nav={nav} />}
 
-        {/* Admin sahifasi faqat Telegram ID sizniki bo'lganda ochiladi */}
+        {/* Admin sahifasini tekshirish */}
         {page.name === "admin" && (
           isTelegramApp && !isAdmin ? (
             <Home nav={nav} onOpen={openProduct} onAdd={addToCart} />
@@ -203,8 +203,9 @@ export default function App() {
       {/* Toast */}
       <div
         aria-live="polite"
-        className={`fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 transition-all duration-400 ${toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
-          }`}
+        className={`fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 transition-all duration-400 ${
+          toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
+        }`}
       >
         <div className="flex items-center gap-3 rounded-full bg-ink px-6 py-3.5 text-sm font-bold text-cream shadow-2xl">
           <span className="grid h-6 w-6 place-items-center rounded-full bg-leaf">
