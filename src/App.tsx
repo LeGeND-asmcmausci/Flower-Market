@@ -15,6 +15,12 @@ import { IconCheck } from "./Components/Ui";
 
 type CartMap = Record<number, number>;
 
+/** True when the site is running inside the Telegram Mini App webview. */
+function isTelegramApp(): boolean {
+  const tg = window.Telegram?.WebApp;
+  return Boolean(tg?.initData && tg.initData.length > 0);
+}
+
 function loadCart(): CartMap {
   try {
     const raw = localStorage.getItem("gullar-cart");
@@ -26,9 +32,10 @@ function loadCart(): CartMap {
 }
 
 export default function App() {
-  // Initial page comes from the URL, so /admin opens directly (even on refresh)
+  // Initial page comes from the URL, so /admin opens directly (even on refresh).
+  // Never inside Telegram, though — the admin panel is browser-only.
   const [page, setPage] = useState<Page>(() =>
-    window.location.pathname.replace(/\/+$/, "") === "/admin"
+    !isTelegramApp() && window.location.pathname.replace(/\/+$/, "") === "/admin"
       ? { name: "admin" }
       : { name: "home" }
   );
@@ -37,8 +44,14 @@ export default function App() {
   const products = useProducts();
 
   const nav = useCallback((p: Page) => {
+    if (p.name === "admin" && isTelegramApp()) return; // no admin inside Telegram
     setPage(p);
   }, []);
+
+  // Safety net: if the admin page somehow opens inside Telegram, go home
+  useEffect(() => {
+    if (page.name === "admin" && isTelegramApp()) setPage({ name: "home" });
+  }, [page]);
 
   // Persist cart
   useEffect(() => {
