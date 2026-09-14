@@ -9,7 +9,6 @@ import { Catalog } from "./Pages/Catalog";
 import { ProductDetail } from "./Pages/ProductDetail";
 import { Cart } from "./Pages/Cart";
 import { About, Contact, OrderSuccess } from "./Pages/InfoPages";
-import { Admin } from "./Pages/Admin";
 import { IconCheck } from "./Components/Ui";
 
 type CartMap = Record<number, number>;
@@ -25,57 +24,14 @@ function loadCart(): CartMap {
 }
 
 export default function App() {
-  const MY_ADMIN_ID = 8482605175;
-
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [isTelegramApp, setIsTelegramApp] = useState<boolean>(false);
   const [page, setPage] = useState<Page>({ name: "home" });
   const [cart, setCart] = useState<CartMap>(loadCart);
   const [toast, setToast] = useState<string | null>(null);
   const products = useProducts();
 
-  // Telegram App holatini va foydalanuvchining adminligini aniqlash
-  useEffect(() => {
-    const tg = (window as any).Telegram?.WebApp;
-    const isInsideTelegram = Boolean(tg && tg.initData && tg.initData.length > 0);
-
-    if (isInsideTelegram) {
-      setIsTelegramApp(true);
-      tg.ready?.();
-
-      const currentUserId = tg.initDataUnsafe?.user?.id;
-      if (currentUserId === MY_ADMIN_ID) {
-        setIsAdmin(true);
-      } else {
-        setIsAdmin(false);
-      }
-    } else {
-      // Vercel / Oddiy brauzer
-      setIsTelegramApp(false);
-      setIsAdmin(true); // Brauzerda admin paneliga kirishga ruxsat beriladi
-    }
-  }, [MY_ADMIN_ID]);
-
-  // Navigatsiya funksiyasi: Telegram va Vercel mantiqini boshqaradi
-  const nav = useCallback(
-    (p: Page) => {
-      if (p.name === "admin") {
-        if (isTelegramApp && !isAdmin) {
-          setPage({ name: "home" });
-          return;
-        }
-      }
-      setPage(p);
-    },
-    [isTelegramApp, isAdmin]
-  );
-
-  // Safetynet: Telegram ichida oddiy foydalanuvchi adashib admin sahifasiga o'tib qolsa home'ga qaytaradi
-  useEffect(() => {
-    if (page.name === "admin" && isTelegramApp && !isAdmin) {
-      setPage({ name: "home" });
-    }
-  }, [page, isTelegramApp, isAdmin]);
+  const nav = useCallback((p: Page) => {
+    setPage(p);
+  }, []);
 
   // Persist cart
   useEffect(() => {
@@ -188,9 +144,6 @@ export default function App() {
         {page.name === "about" && <About nav={nav} />}
         {page.name === "contact" && <Contact nav={nav} />}
         {page.name === "success" && <OrderSuccess orderId={page.orderId} nav={nav} />}
-
-        {/* Admin sahifasi */}
-        {page.name === "admin" && <Admin nav={nav} />}
       </main>
 
       <Footer nav={nav} />
