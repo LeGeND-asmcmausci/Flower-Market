@@ -8,6 +8,5 @@ export type Page =
   | { name: "about" }
   | { name: "contact" }
   | { name: "success"; orderId: string }
-  | { name: "admin" };
 
 export type Nav = (page: Page) => void;
