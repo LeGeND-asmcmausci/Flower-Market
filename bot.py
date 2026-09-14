@@ -3,7 +3,7 @@ from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 TOKEN = "8899287838:AAHYUFasyeP8z6cKxLnbsLb1yF9dQvJUab0"
-WEB_APP_URL = "https://flower-market-git-master-le-ge-nd.vercel.app/"
+WEB_APP_URL = "https://flower-market-olive.vercel.app/"
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
