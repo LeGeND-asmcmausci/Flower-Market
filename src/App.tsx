@@ -34,34 +34,51 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const products = useProducts();
 
+  // Telegram App holatini va foydalanuvchining adminligini aniqlash
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
+    const isInsideTelegram = Boolean(tg && tg.initData && tg.initData.length > 0);
 
-    if (tg && tg.initDataUnsafe?.user) {
+    if (isInsideTelegram) {
       setIsTelegramApp(true);
       tg.ready?.();
 
-      const currentUserId = tg.initDataUnsafe.user.id;
+      const currentUserId = tg.initDataUnsafe?.user?.id;
       if (currentUserId === MY_ADMIN_ID) {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);
       }
     } else {
-      // Vercel yoki oddiy brauzerda
+      // Vercel / Oddiy brauzer
       setIsTelegramApp(false);
-      setIsAdmin(true);
+      setIsAdmin(true); // Brauzerda admin paneliga kirishga ruxsat beriladi
     }
   }, [MY_ADMIN_ID]);
 
-  // Telegram Mini App ichida oddiy foydalanuvchi Admin tugmasini bossa -> Darhol Home sahifasiga qaytariladi
+  // Navigatsiya funksiyasi: Telegram va Vercel mantiqini boshqaradi
+  const nav = useCallback(
+    (p: Page) => {
+      if (p.name === "admin") {
+        if (isTelegramApp && !isAdmin) {
+          // Telegram ichidagi oddiy foydalanuvchi Admin tugmasini bossa -> Home sahifasiga o'tadi
+          setPage({ name: "home" });
+          return;
+        }
+      }
+      setPage(p);
+    },
+    [isTelegramApp, isAdmin]
+  );
+
+  // Safetynet: Telegram ichida oddiy foydalanuvchi adashib admin sahifasiga o'tib qolsa home'ga qaytaradi
   useEffect(() => {
     if (page.name === "admin" && isTelegramApp && !isAdmin) {
       setPage({ name: "home" });
     }
   }, [page, isTelegramApp, isAdmin]);
 
-  // persist cart
+  // Persist cart
   useEffect(() => {
     try {
       localStorage.setItem("gullar-cart", JSON.stringify(cart));
@@ -70,24 +87,22 @@ export default function App() {
     }
   }, [cart]);
 
-  // scroll to top on page change
+  // Scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [page]);
 
-  // clear cart once an order is placed
+  // Clear cart once an order is placed
   useEffect(() => {
     if (page.name === "success") setCart({});
   }, [page]);
 
-  // toast auto-hide
+  // Toast auto-hide
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 2400);
     return () => clearTimeout(t);
   }, [toast]);
-
-  const nav = useCallback((p: Page) => setPage(p), []);
 
   const addToCart = useCallback((p: Product, qty = 1) => {
     setCart((prev) => {
@@ -172,14 +187,8 @@ export default function App() {
         {page.name === "contact" && <Contact nav={nav} />}
         {page.name === "success" && <OrderSuccess orderId={page.orderId} nav={nav} />}
 
-        {/* Admin sahifasini tekshirish */}
-        {page.name === "admin" && (
-          isTelegramApp && !isAdmin ? (
-            <Home nav={nav} onOpen={openProduct} onAdd={addToCart} />
-          ) : (
-            <Admin nav={nav} />
-          )
-        )}
+        {/* Admin sahifasi */}
+        {page.name === "admin" && <Admin nav={nav} />}
       </main>
 
       <Footer nav={nav} />
@@ -187,8 +196,9 @@ export default function App() {
       {/* Toast */}
       <div
         aria-live="polite"
-        className={`fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 transition-all duration-400 ${toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
-          }`}
+        className={`fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 transition-all duration-400 ${
+          toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
+        }`}
       >
         <div className="flex items-center gap-3 rounded-full bg-ink px-6 py-3.5 text-sm font-bold text-cream shadow-2xl">
           <span className="grid h-6 w-6 place-items-center rounded-full bg-leaf">
