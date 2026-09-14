@@ -10,7 +10,17 @@ const LINKS: { label: string; page: Page; key: string }[] = [
   { label: "Aloqa", page: { name: "contact" }, key: "contact" },
 ];
 
-export function Header({ page, nav, cartCount }: { page: Page; nav: Nav; cartCount: number }) {
+export function Header({
+  page,
+  nav,
+  cartCount,
+  showAdmin,
+}: {
+  page: Page;
+  nav: Nav;
+  cartCount: number;
+  showAdmin?: boolean; // App.tsx'dan keladigan prop (ixtiyoriy)
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -35,14 +45,18 @@ export function Header({ page, nav, cartCount }: { page: Page; nav: Nav; cartCou
     nav(p);
   };
 
-  // Telegram va Admin tekshiruvi (Komponent ichida bir marta elon qilinadi)
+  // Telegram va Admin tekshiruvi (Ichki xavfsizlik)
   const tg = typeof window !== "undefined" ? (window as any).Telegram?.WebApp : undefined;
-  const isTelegram = Boolean(tg && tg.initDataUnsafe?.user);
+  const isTelegram = Boolean(tg?.initData || tg?.initDataUnsafe?.user);
   const currentUserId = tg?.initDataUnsafe?.user?.id;
-  const MY_ADMIN_ID = 8482605175;
+  const MY_ADMIN_ID = "8482605175"; // ID string ko'rinishida saqlanadi
 
-  // Agar Telegram Mini App bo'lsa va foydalanuvchi Admin bo'lmasa -> Admin tugmasi yashiriladi
-  const showAdminButton = !isTelegram || currentUserId === MY_ADMIN_ID;
+  // 1-shart: Agar prop orqali showAdmin uzatilgan bo'lsa shuni oladi.
+  // 2-shart: Prop bo'lmasa, o'zi Telegram'da ekanligini va ID mos kelishini tekshiradi.
+  const canSeeAdmin =
+    showAdmin !== undefined
+      ? showAdmin
+      : !isTelegram || String(currentUserId) === MY_ADMIN_ID;
 
   return (
     <>
@@ -104,7 +118,7 @@ export function Header({ page, nav, cartCount }: { page: Page; nav: Nav; cartCou
             ))}
 
             {/* Desktop menyuda Admin tugmasi */}
-            {showAdminButton && (
+            {canSeeAdmin && (
               <button
                 onClick={() => go({ name: "admin" })}
                 className={cn(
@@ -204,7 +218,7 @@ export function Header({ page, nav, cartCount }: { page: Page; nav: Nav; cartCou
             ))}
 
             {/* Mobil menyuda Admin tugmasi */}
-            {showAdminButton && (
+            {canSeeAdmin && (
               <button
                 onClick={() => go({ name: "admin" })}
                 className={cn(
