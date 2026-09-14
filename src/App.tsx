@@ -61,7 +61,6 @@ export default function App() {
     (p: Page) => {
       if (p.name === "admin") {
         if (isTelegramApp && !isAdmin) {
-          // Telegram ichidagi oddiy foydalanuvchi Admin tugmasini bossa -> Home sahifasiga o'tadi
           setPage({ name: "home" });
           return;
         }
@@ -137,8 +136,11 @@ export default function App() {
   const cartItems = useMemo(
     () =>
       Object.entries(cart)
-        .map(([id, qty]) => ({ product: products.find((p) => p.id === Number(id))!, qty }))
-        .filter((it) => it.product),
+        .map(([id, qty]) => {
+          const product = products.find((p) => p.id === Number(id));
+          return product ? { product, qty } : null;
+        })
+        .filter((item): item is { product: Product; qty: number } => item !== null),
     [cart, products]
   );
 

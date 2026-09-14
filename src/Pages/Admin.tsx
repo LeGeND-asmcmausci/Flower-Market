@@ -67,12 +67,12 @@ function productToForm(p: Product): FormState {
     oldPrice: p.oldPrice ? String(p.oldPrice) : "",
     rating: String(p.rating),
     reviews: String(p.reviews),
-    colors: p.colors,
+    colors: p.colors ?? [],
     tag: p.tag ?? "none",
     img: p.img,
     short: p.short,
     desc: p.desc,
-    composition: p.composition.join("\n"),
+    composition: p.composition ? p.composition.join("\n") : "",
     stock: String(p.stock),
   };
 }
@@ -83,7 +83,6 @@ const inputCls =
   "mt-2 w-full rounded-xl border border-ink/15 bg-cream px-4 py-3 text-sm focus:border-terra focus:outline-none";
 
 export function Admin({ nav }: { nav: Nav }) {
-  // Vercel/brauzerda birinchi marta kirganda ham login so'ramaydi
   const [unlocked, setUnlocked] = useState(() => {
     return sessionStorage.getItem(AUTH_KEY) === "1";
   });
@@ -172,7 +171,6 @@ export function Admin({ nav }: { nav: Nav }) {
     }
   };
 
-  /* ================= PASSWORD GATE ================= */
   if (!unlocked) {
     return (
       <div className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-4 py-20 text-center">
@@ -224,7 +222,6 @@ export function Admin({ nav }: { nav: Nav }) {
     );
   }
 
-  /* ================= ADMIN PANEL ================= */
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 md:px-8 lg:py-14">
       <nav className="mb-6 flex items-center gap-2 text-xs font-bold tracking-wide text-ink-soft/70">
@@ -259,7 +256,6 @@ export function Admin({ nav }: { nav: Nav }) {
       </p>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[420px_1fr]">
-        {/* ============ FORM ============ */}
         <div className="lg:sticky lg:top-28 lg:self-start">
           <div className="rounded-2xl border border-sand bg-linen p-6">
             <div className="flex items-center justify-between">
@@ -479,7 +475,7 @@ export function Admin({ nav }: { nav: Nav }) {
 
           <button
             onClick={() => {
-              if (confirm("Barcha o'zgarishlar bekor qilinib, asl katalog tiklansinmi?")) {
+              if (window.confirm("Barcha o'zgarishlar bekor qilinib, asl katalog tiklansinmi?")) {
                 resetProducts();
                 startNew();
               }
@@ -490,7 +486,6 @@ export function Admin({ nav }: { nav: Nav }) {
           </button>
         </div>
 
-        {/* ============ PRODUCT LIST ============ */}
         <div>
           <p className="mb-4 text-sm text-ink-soft">
             <span className="font-extrabold text-ink">{products.length}</span> ta guldasta katalogda
