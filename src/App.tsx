@@ -26,7 +26,12 @@ function loadCart(): CartMap {
 }
 
 export default function App() {
-  const [page, setPage] = useState<Page>({ name: "home" });
+  // Initial page comes from the URL, so /admin opens directly (even on refresh)
+  const [page, setPage] = useState<Page>(() =>
+    window.location.pathname.replace(/\/+$/, "") === "/admin"
+      ? { name: "admin" }
+      : { name: "home" }
+  );
   const [cart, setCart] = useState<CartMap>(loadCart);
   const [toast, setToast] = useState<string | null>(null);
   const products = useProducts();
@@ -61,12 +66,9 @@ export default function App() {
         : "GULLAR — Gullar do'koni | Toshkent";
   }, [page]);
 
-  // Open the admin panel when the site is loaded via /admin
+  // Kick off cloud sync once on boot
   useEffect(() => {
     void initCloudSync();
-    if (window.location.pathname.replace(/\/+$/, "") === "/admin") {
-      setPage({ name: "admin" });
-    }
   }, []);
 
   // Clear cart once an order is placed
