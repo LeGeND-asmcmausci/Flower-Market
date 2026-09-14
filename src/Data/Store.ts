@@ -1,29 +1,61 @@
 import { useSyncExternalStore } from "react";
 import { PRODUCTS as SEED_PRODUCTS, type Product } from "./Products";
+import { cloudConfigured, cloudPull, cloudPush } from "./cloud";
 
 const STORAGE_KEY = "gullar-products";
+const SEED_SIGNATURE = JSON.stringify(SEED_PRODUCTS);
 
-function readStorage(): Product[] {
+/** Where the catalog currently stands, shown as a chip in the admin panel. */
+export type CloudStatus = "unconfigured" | "syncing" | "synced" | "error";
+
+function readLocal(): Product[] | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Product[];
-      if (Array.isArray(parsed) && parsed.length) return parsed;
-    }
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    // Old sessions stored the untouched seed catalog — ignore it so the cloud
+    // copy (or the fresh seed below) wins instead of a stale local snapshot.
+    if (JSON.stringify(parsed) === SEED_SIGNATURE) return null;
+    return parsed as Product[];
   } catch {
-    /* ignore */
+    return null;
   }
-  return SEED_PRODUCTS;
 }
 
-let products: Product[] = readStorage();
+let products: Product[] = readLocal() ?? SEED_PRODUCTS;
+let cloudStatus: CloudStatus = cloudConfigured() ? "syncing" : "unconfigured";
+let userEdited = false; // set once the admin changes something after boot
+let booted = false;
+
 const listeners = new Set<() => void>();
 
 function emit() {
   listeners.forEach((l) => l());
 }
 
-function persist() {
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function getSnapshot(): Product[] {
+  return products;
+}
+
+function getCloudStatusSnapshot(): CloudStatus {
+  return cloudStatus;
+}
+
+function setCloudStatus(next: CloudStatus) {
+  if (cloudStatus === next) return;
+  cloudStatus = next;
+  emit();
+}
+
+function persistLocal() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
   } catch {
@@ -31,18 +63,26 @@ function persist() {
   }
 }
 
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+function applyProducts(next: Product[]) {
+  products = next;
+  persistLocal();
+  emit();
 }
 
-function getSnapshot() {
-  return products;
+function syncToCloud() {
+  if (!cloudConfigured()) return;
+  setCloudStatus("syncing");
+  void cloudPush(products).then((ok) => setCloudStatus(ok ? "synced" : "error"));
 }
 
 /** Reactive read of the current product list — re-renders on any admin change. */
 export function useProducts(): Product[] {
   return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+/** Reactive read of the cloud sync status (admin status chip). */
+export function useCloudStatus(): CloudStatus {
+  return useSyncExternalStore(subscribe, getCloudStatusSnapshot);
 }
 
 /** Non-reactive read, for use outside React (e.g. computing an id). */
@@ -56,27 +96,81 @@ function nextId(): number {
 
 export function addProduct(data: Omit<Product, "id">): Product {
   const product: Product = { ...data, id: nextId() };
-  products = [product, ...products];
-  persist();
-  emit();
+  userEdited = true;
+  applyProducts([product, ...products]);
+  syncToCloud();
   return product;
 }
 
 export function updateProduct(id: number, data: Omit<Product, "id">): void {
-  products = products.map((p) => (p.id === id ? { ...data, id } : p));
-  persist();
-  emit();
+  userEdited = true;
+  applyProducts(products.map((p) => (p.id === id ? { ...data, id } : p)));
+  syncToCloud();
 }
 
 export function removeProduct(id: number): void {
-  products = products.filter((p) => p.id !== id);
-  persist();
-  emit();
+  userEdited = true;
+  applyProducts(products.filter((p) => p.id !== id));
+  syncToCloud();
 }
 
-/** Wipes any local edits and restores the original seed catalog. */
+/** Wipes any edits, restores the original seed catalog and re-syncs it to the cloud. */
 export function resetProducts(): void {
-  products = SEED_PRODUCTS;
-  persist();
-  emit();
+  userEdited = true;
+  applyProducts(SEED_PRODUCTS);
+  syncToCloud();
+}
+
+function allLookLikeProducts(arr: unknown[]): boolean {
+  return arr.every((p) => p && typeof p === "object" && "id" in p && "name" in p && "img" in p);
+}
+
+/**
+ * Unwraps the bin content into a product list.
+ * - `{ products: [...] }` wrapper (even empty) → authoritative.
+ * - Plain non-empty array of products → authoritative (easy manual import).
+ * - Empty/garbage content → null (bin counts as fresh and gets seeded).
+ */
+function extractProducts(data: unknown): Product[] | null {
+  if (Array.isArray(data)) {
+    if (!data.length) return null;
+    return allLookLikeProducts(data) ? (data as Product[]) : null;
+  }
+  if (data && typeof data === "object") {
+    const wrapped = (data as { products?: unknown }).products;
+    if (Array.isArray(wrapped) && allLookLikeProducts(wrapped)) {
+      return wrapped as Product[];
+    }
+  }
+  return null;
+}
+
+/**
+ * One-time boot: pull the catalog from the cloud so admin edits are visible to
+ * every visitor.
+ * - Cloud reachable → its copy wins (unless the admin already changed something).
+ * - Fresh/empty bin → current catalog (seed or local edits) is pushed up.
+ * - Unreachable → local snapshot keeps the shop working, status = "error".
+ */
+export async function initCloudSync(): Promise<void> {
+  if (booted || !cloudConfigured()) return;
+  booted = true;
+
+  const res = await cloudPull();
+  if (!res.ok) {
+    setCloudStatus("error");
+    return;
+  }
+  if (userEdited) {
+    setCloudStatus("synced");
+    return;
+  }
+  const extracted = extractProducts(res.data);
+  if (extracted) {
+    applyProducts(extracted);
+    setCloudStatus("synced");
+  } else {
+    // Fresh bin — seed it with the current catalog.
+    syncToCloud();
+  }
 }

@@ -9,6 +9,8 @@ import { Catalog } from "./Pages/Catalog";
 import { ProductDetail } from "./Pages/ProductDetail";
 import { Cart } from "./Pages/Cart";
 import { About, Contact, OrderSuccess } from "./Pages/InfoPages";
+import { Admin } from "./Pages/Admin";
+import { initCloudSync } from "./Data/Store";
 import { IconCheck } from "./Components/Ui";
 
 type CartMap = Record<number, number>;
@@ -46,6 +48,26 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [page]);
+
+  // Keep the browser URL in sync so /admin is linkable and refresh-safe
+  useEffect(() => {
+    const path = page.name === "admin" ? "/admin" : "/";
+    if (window.location.pathname !== path) {
+      window.history.replaceState(null, "", path);
+    }
+    document.title =
+      page.name === "admin"
+        ? "Admin panel — GULLAR"
+        : "GULLAR — Gullar do'koni | Toshkent";
+  }, [page]);
+
+  // Open the admin panel when the site is loaded via /admin
+  useEffect(() => {
+    void initCloudSync();
+    if (window.location.pathname.replace(/\/+$/, "") === "/admin") {
+      setPage({ name: "admin" });
+    }
+  }, []);
 
   // Clear cart once an order is placed
   useEffect(() => {
@@ -144,6 +166,9 @@ export default function App() {
         {page.name === "about" && <About nav={nav} />}
         {page.name === "contact" && <Contact nav={nav} />}
         {page.name === "success" && <OrderSuccess orderId={page.orderId} nav={nav} />}
+
+        {/* Admin panel — secret route, hidden from normal navigation */}
+        {page.name === "admin" && <Admin nav={nav} />}
       </main>
 
       <Footer nav={nav} />
