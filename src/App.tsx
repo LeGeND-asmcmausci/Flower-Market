@@ -18,7 +18,7 @@ type CartMap = Record<number, number>;
 /** True when the site is running inside the Telegram Mini App webview. */
 function isTelegramApp(): boolean {
   const tg = window.Telegram?.WebApp;
-  return Boolean(tg?.initData && tg.initData.length > 0);
+  return Boolean(tg?.initDataUnsafe);
 }
 
 function loadCart(): CartMap {
