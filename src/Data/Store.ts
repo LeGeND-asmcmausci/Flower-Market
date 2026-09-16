@@ -5,28 +5,30 @@ import { cloudConfigured, cloudPull, cloudPush } from "./cloud";
 const STORAGE_KEY = "gullar-products";
 const SEED_SIGNATURE = JSON.stringify(SEED_PRODUCTS);
 
-/** Where the catalog currently stands, shown as a chip in the admin panel. */
+/** Admin panelidagi bulut statusi */
 export type CloudStatus = "unconfigured" | "syncing" | "synced" | "error";
 
 function readLocal(): Product[] | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
+
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return null;
     if (!Array.isArray(parsed) || parsed.length === 0) return null;
-    // Old sessions stored the untouched seed catalog — ignore it so the cloud
-    // copy (or the fresh seed below) wins instead of a stale local snapshot.
+
+    // Eski seed katalogi bo'lsa, yangi bulut/seed ma'lumotlari ustun kelishi uchun e'tiborsiz qoldiramiz
     if (JSON.stringify(parsed) === SEED_SIGNATURE) return null;
+
     return parsed as Product[];
   } catch {
     return null;
   }
 }
 
+// Boshlang'ich holat
 let products: Product[] = readLocal() ?? SEED_PRODUCTS;
 let cloudStatus: CloudStatus = cloudConfigured() ? "syncing" : "unconfigured";
-let userEdited = false; // set once the admin changes something after boot
+let userEdited = false;
 let booted = false;
 
 const listeners = new Set<() => void>();
@@ -60,7 +62,7 @@ function persistLocal() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
   } catch {
-    /* ignore, e.g. storage disabled */
+    /* localStorage o'chiq bo'lsa e'tiborsiz qoldiramiz */
   }
 }
 
@@ -76,17 +78,17 @@ function syncToCloud() {
   void cloudPush(products).then((ok) => setCloudStatus(ok ? "synced" : "error"));
 }
 
-/** Reactive read of the current product list — re-renders on any admin change. */
+/** Mahsulotlar ro'yxatini reaktiv o'qish xuki */
 export function useProducts(): Product[] {
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
-/** Reactive read of the cloud sync status (admin status chip). */
+/** Bulut statusini reaktiv o'qish xuki */
 export function useCloudStatus(): CloudStatus {
   return useSyncExternalStore(subscribe, getCloudStatusSnapshot);
 }
 
-/** Non-reactive read, for use outside React (e.g. computing an id). */
+/** React-dan tashqarida ishlatish uchun no-reaktiv funksiya */
 export function getProducts(): Product[] {
   return products;
 }
@@ -115,7 +117,7 @@ export function removeProduct(id: number): void {
   syncToCloud();
 }
 
-/** Wipes any edits, restores the original seed catalog and re-syncs it to the cloud. */
+/** Barcha o'zgarishlarni tozalab, boshlang'ich katalogga qaytaradi */
 export function resetProducts(): void {
   userEdited = true;
   applyProducts(SEED_PRODUCTS);
@@ -123,16 +125,11 @@ export function resetProducts(): void {
 }
 
 function allLookLikeProducts(arr: unknown[]): boolean {
-  return arr.every((p) => p && typeof p === "object" && "id" in p && "name" in p && "img" in p);
+  return arr.every(
+    (p) => p && typeof p === "object" && "id" in p && "name" in p && "img" in p
+  );
 }
 
-/**
- * Unwraps the bin content into a product list.
- * - `{ products: [...] }` wrapper (even empty) → authoritative.
- * - Plain non-empty array of products → authoritative (easy manual import).
- * - Non-empty products array or wrapper → authoritative.
- * - Empty/garbage content → null (bin counts as fresh and gets seeded).
- */
 function extractProducts(data: unknown): Product[] | null {
   if (!data) return null;
 
@@ -140,7 +137,7 @@ function extractProducts(data: unknown): Product[] | null {
     if (!data.length) return null;
     return allLookLikeProducts(data) ? (data as Product[]) : null;
   }
-  if (data && typeof data === "object") {
+  if (typeof data === "object") {
     const wrapped = (data as { products?: unknown }).products;
     if (Array.isArray(wrapped) && allLookLikeProducts(wrapped)) {
       return wrapped as Product[];
@@ -150,37 +147,34 @@ function extractProducts(data: unknown): Product[] | null {
 }
 
 /**
- * One-time boot: pull the catalog from the cloud so admin edits are visible to
- * every visitor.
- * - Cloud reachable → its copy wins (unless the admin already changed something).
- * - Fresh/empty bin → current catalog (seed or local edits) is pushed up.
- * - Cloud reachable with flowers → its copy wins.
- * - Fresh/empty bin → SEED_PRODUCTS catalog is pushed up to populate the cloud.
- * - Unreachable → local snapshot keeps the shop working, status = "error".
+ * Dastur ishga tushganda bulut bilan bir martalik sinxronizatsiya
  */
 export async function initCloudSync(): Promise<void> {
   if (booted || !cloudConfigured()) return;
   booted = true;
 
-  const res = await cloudPull();
-  if (!res.ok) {
-    setCloudStatus("error");
-    return;
-  }
-  if (userEdited) {
-    setCloudStatus("synced");
-    return;
-  }
-  const extracted = extractProducts(res.data);
-  if (extracted) {
-    applyProducts(extracted);
-    setCloudStatus("synced");
-  } else {
-    // Fresh bin — seed it with the current catalog.
-    // Fresh or empty bin: populate with all 16 seed flowers and sync to cloud!
-    if (products.length === 0) {
-      applyProducts(SEED_PRODUCTS);
+  try {
+    const res = await cloudPull();
+    if (!res.ok) {
+      setCloudStatus("error");
+      return;
     }
-    syncToCloud();
+    if (userEdited) {
+      setCloudStatus("synced");
+      return;
+    }
+    const extracted = extractProducts(res.data);
+    if (extracted) {
+      applyProducts(extracted);
+      setCloudStatus("synced");
+    } else {
+      // Bulut bo'sh bo'lsa, mavjud mahsulotlarni yuboramiz
+      if (products.length === 0) {
+        applyProducts(SEED_PRODUCTS);
+      }
+      syncToCloud();
+    }
+  } catch {
+    setCloudStatus("error");
   }
 }
