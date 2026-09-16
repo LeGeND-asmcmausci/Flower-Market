@@ -144,22 +144,6 @@ function extractProducts(data: unknown): Product[] | null {
     const wrapped = (data as { products?: unknown }).products;
     if (Array.isArray(wrapped) && allLookLikeProducts(wrapped)) {
       return wrapped as Product[];
-
-  if (typeof data === "object") {
-    const obj = data as Record<string, unknown>;
-    const target = obj.record ?? obj;
-
-    if (Array.isArray(target)) {
-      if (!target.length) return null;
-      return allLookLikeProducts(target) ? (target as Product[]) : null;
-    }
-
-    if (target && typeof target === "object") {
-      const wrapped = (target as { products?: unknown }).products;
-      if (Array.isArray(wrapped)) {
-        if (!wrapped.length) return null; // Empty bin -> treat as fresh and seed!
-        return allLookLikeProducts(wrapped) ? (wrapped as Product[]) : null;
-      }
     }
   }
   return null;
@@ -189,7 +173,6 @@ export async function initCloudSync(): Promise<void> {
   }
   const extracted = extractProducts(res.data);
   if (extracted) {
-  if (extracted && extracted.length > 0) {
     applyProducts(extracted);
     setCloudStatus("synced");
   } else {
