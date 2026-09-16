@@ -14,6 +14,7 @@ function readLocal(): Product[] | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return null;
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
     // Old sessions stored the untouched seed catalog — ignore it so the cloud
     // copy (or the fresh seed below) wins instead of a stale local snapshot.
     if (JSON.stringify(parsed) === SEED_SIGNATURE) return null;
@@ -129,9 +130,12 @@ function allLookLikeProducts(arr: unknown[]): boolean {
  * Unwraps the bin content into a product list.
  * - `{ products: [...] }` wrapper (even empty) → authoritative.
  * - Plain non-empty array of products → authoritative (easy manual import).
+ * - Non-empty products array or wrapper → authoritative.
  * - Empty/garbage content → null (bin counts as fresh and gets seeded).
  */
 function extractProducts(data: unknown): Product[] | null {
+  if (!data) return null;
+
   if (Array.isArray(data)) {
     if (!data.length) return null;
     return allLookLikeProducts(data) ? (data as Product[]) : null;
@@ -140,6 +144,22 @@ function extractProducts(data: unknown): Product[] | null {
     const wrapped = (data as { products?: unknown }).products;
     if (Array.isArray(wrapped) && allLookLikeProducts(wrapped)) {
       return wrapped as Product[];
+
+  if (typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+    const target = obj.record ?? obj;
+
+    if (Array.isArray(target)) {
+      if (!target.length) return null;
+      return allLookLikeProducts(target) ? (target as Product[]) : null;
+    }
+
+    if (target && typeof target === "object") {
+      const wrapped = (target as { products?: unknown }).products;
+      if (Array.isArray(wrapped)) {
+        if (!wrapped.length) return null; // Empty bin -> treat as fresh and seed!
+        return allLookLikeProducts(wrapped) ? (wrapped as Product[]) : null;
+      }
     }
   }
   return null;
@@ -150,6 +170,8 @@ function extractProducts(data: unknown): Product[] | null {
  * every visitor.
  * - Cloud reachable → its copy wins (unless the admin already changed something).
  * - Fresh/empty bin → current catalog (seed or local edits) is pushed up.
+ * - Cloud reachable with flowers → its copy wins.
+ * - Fresh/empty bin → SEED_PRODUCTS catalog is pushed up to populate the cloud.
  * - Unreachable → local snapshot keeps the shop working, status = "error".
  */
 export async function initCloudSync(): Promise<void> {
@@ -167,10 +189,15 @@ export async function initCloudSync(): Promise<void> {
   }
   const extracted = extractProducts(res.data);
   if (extracted) {
+  if (extracted && extracted.length > 0) {
     applyProducts(extracted);
     setCloudStatus("synced");
   } else {
     // Fresh bin — seed it with the current catalog.
+    // Fresh or empty bin: populate with all 16 seed flowers and sync to cloud!
+    if (products.length === 0) {
+      applyProducts(SEED_PRODUCTS);
+    }
     syncToCloud();
   }
 }
