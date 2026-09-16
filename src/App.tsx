@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { type Product } from "./Data/Products";
-import { useProducts } from "./Data/Store";
+import { initCloudSync, useProducts } from "./Data/Store";
 import type { Page } from "./Utils/types";
 import { Header } from "./Components/Header";
 import { Footer } from "./Components/Footer";
@@ -10,7 +10,6 @@ import { ProductDetail } from "./Pages/ProductDetail";
 import { Cart } from "./Pages/Cart";
 import { About, Contact, OrderSuccess } from "./Pages/InfoPages";
 import { Admin } from "./Pages/Admin";
-import { initCloudSync } from "./Data/Store";
 import { IconCheck } from "./Components/Ui";
 
 type CartMap = Record<number, number>;
@@ -108,7 +107,11 @@ export default function App() {
     }
   }, [page.name]);
 
-  // Kick off cloud sync once on boot
+  // Bulut sinxronizatsiyasi — mount'da aynan bir marta ishga tushadi.
+  // initCloudSync() promiseni kutmaydi va modul darajasida `booted` bilan
+  // himoyalangan, shuning uchun bu effect qayta render zanjirini boshlamaydi.
+  // Bulutdan kelgan yangi ma'lumotlar store'dagi bitta emit() orqali
+  // useProducts()/useCloudStatus() obunachilariga yetib boradi.
   useEffect(() => {
     void initCloudSync();
   }, []);

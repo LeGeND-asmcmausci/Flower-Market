@@ -28,20 +28,36 @@ export function cloudConfigured(): boolean {
 
 const binUrl = () => `https://api.jsonbin.io/v3/b/${CLOUD_CONFIG.bin}`;
 
+/**
+ * So'rov osilib qolsa (tarmoq uzilishi, proxy muammosi) store "syncing"
+ * holatida abadiy qotib qolmasligi uchun har bir fetchga qattiy timeout.
+ */
+const REQUEST_TIMEOUT_MS = 8000;
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export type CloudRead = { ok: true; data: unknown } | { ok: false };
 
 /** Reads the catalog from the cloud bin. `ok: false` when unconfigured or unreachable. */
 export async function cloudPull(): Promise<CloudRead> {
   if (!cloudConfigured()) return { ok: false };
   try {
-    const res = await fetch(binUrl(), {
+    const res = await fetchWithTimeout(binUrl(), {
       headers: { "X-Master-Key": CLOUD_CONFIG.key, "X-Bin-Meta": "false" },
     });
     if (!res.ok) return { ok: false };
     const data = (await res.json()) ?? null;
     return { ok: true, data };
   } catch {
-    return { ok: false };
+    return { ok: false }; // tarmoq xatosi, timeout yoki noto'g'ri JSON
   }
 }
 
@@ -49,7 +65,7 @@ export async function cloudPull(): Promise<CloudRead> {
 export async function cloudPush(data: unknown): Promise<boolean> {
   if (!cloudConfigured()) return false;
   try {
-    const res = await fetch(binUrl(), {
+    const res = await fetchWithTimeout(binUrl(), {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -60,6 +76,6 @@ export async function cloudPush(data: unknown): Promise<boolean> {
     });
     return res.ok;
   } catch {
-    return false;
+    return false; // tarmoq xatosi yoki timeout
   }
 }
