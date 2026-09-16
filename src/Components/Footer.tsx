@@ -110,11 +110,6 @@ export function Footer({ nav }: { nav: Nav }) {
           <p>
             React + Tailwind CSS bilan <span className="text-rose">qo'l mehnati</span> bilan yaratildi
           </p>
-          <div className="flex items-center gap-3">
-            <p>
-              React + Tailwind CSS bilan <span className="text-rose">qo'l mehnati</span> bilan yaratildi
-            </p>
-          </div>
         </div>
       </div>
     </footer>
