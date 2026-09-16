@@ -15,10 +15,23 @@ import { IconCheck } from "./Components/Ui";
 
 type CartMap = Record<number, number>;
 
-/** True when the site is running inside the Telegram Mini App webview. */
-function isTelegramApp(): boolean {
-  const tg = window.Telegram?.WebApp;
-  return Boolean(tg?.initDataUnsafe);
+/** Checks whether the current URL points to the admin panel.
+ * Supports /admin, /admin/, #admin, #/admin, or ?admin across all hostings.
+ */
+function isAdminRoute(): boolean {
+  if (typeof window === "undefined") return false;
+  const path = window.location.pathname.replace(/\/+$/, "").toLowerCase();
+  const hash = window.location.hash.toLowerCase().replace(/\/+$/, "");
+  const search = window.location.search.toLowerCase();
+  return (
+    path === "/admin" ||
+    path.endsWith("/admin") ||
+    hash === "#admin" ||
+    hash === "#/admin" ||
+    search === "?admin" ||
+    search.startsWith("?admin=") ||
+    search.includes("page=admin")
+  );
 }
 
 function loadCart(): CartMap {
@@ -32,26 +45,34 @@ function loadCart(): CartMap {
 }
 
 export default function App() {
-  // Initial page comes from the URL, so /admin opens directly (even on refresh).
-  // Never inside Telegram, though — the admin panel is browser-only.
+  // Initial page comes directly from URL: /admin immediately opens admin
   const [page, setPage] = useState<Page>(() =>
-    !isTelegramApp() && window.location.pathname.replace(/\/+$/, "") === "/admin"
-      ? { name: "admin" }
-      : { name: "home" }
+    isAdminRoute() ? { name: "admin" } : { name: "home" }
   );
   const [cart, setCart] = useState<CartMap>(loadCart);
   const [toast, setToast] = useState<string | null>(null);
   const products = useProducts();
 
   const nav = useCallback((p: Page) => {
-    if (p.name === "admin" && isTelegramApp()) return; // no admin inside Telegram
     setPage(p);
   }, []);
 
-  // Safety net: if the admin page somehow opens inside Telegram, go home
+  // Listen to browser navigation (back/forward and URL changes)
   useEffect(() => {
-    if (page.name === "admin" && isTelegramApp()) setPage({ name: "home" });
-  }, [page]);
+    const onLocationChange = () => {
+      if (isAdminRoute()) {
+        setPage((prev) => (prev.name === "admin" ? prev : { name: "admin" }));
+      } else {
+        setPage((prev) => (prev.name === "admin" ? { name: "home" } : prev));
+      }
+    };
+    window.addEventListener("popstate", onLocationChange);
+    window.addEventListener("hashchange", onLocationChange);
+    return () => {
+      window.removeEventListener("popstate", onLocationChange);
+      window.removeEventListener("hashchange", onLocationChange);
+    };
+  }, []);
 
   // Persist cart
   useEffect(() => {
@@ -69,15 +90,23 @@ export default function App() {
 
   // Keep the browser URL in sync so /admin is linkable and refresh-safe
   useEffect(() => {
-    const path = page.name === "admin" ? "/admin" : "/";
-    if (window.location.pathname !== path) {
-      window.history.replaceState(null, "", path);
+    try {
+      const currentIsAdmin = isAdminRoute();
+      if (page.name === "admin") {
+        if (!currentIsAdmin) {
+          window.history.pushState(null, "", "/admin");
+        }
+        document.title = "Admin panel — GULLAR";
+      } else {
+        if (currentIsAdmin) {
+          window.history.pushState(null, "", "/");
+        }
+        document.title = "GULLAR — Gullar do'koni | Toshkent";
+      }
+    } catch {
+      /* ignore */
     }
-    document.title =
-      page.name === "admin"
-        ? "Admin panel — GULLAR"
-        : "GULLAR — Gullar do'koni | Toshkent";
-  }, [page]);
+  }, [page.name]);
 
   // Kick off cloud sync once on boot
   useEffect(() => {

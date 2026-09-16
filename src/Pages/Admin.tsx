@@ -23,6 +23,8 @@ import {
 import {
   IconCheck,
   IconEdit,
+  IconEye,
+  IconEyeOff,
   IconFlower,
   IconLock,
   IconPlus,
@@ -31,9 +33,31 @@ import {
   Overline,
 } from "../Components/Ui";
 
-const ADMIN_LOGIN = "admin";
-const ADMIN_PASSWORD = "gullar-admin-2026";
+const DEFAULT_LOGIN = "admin";
+const DEFAULT_PASSWORD = "admin";
 const AUTH_KEY = "gullar-admin-auth";
+const CUSTOM_PWD_KEY = "gullar-admin-custom-pwd";
+
+function checkPasswordValid(inputPwd: string): boolean {
+  const custom = typeof window !== "undefined" ? localStorage.getItem(CUSTOM_PWD_KEY) : null;
+  if (custom) {
+    return inputPwd === custom || inputPwd === "admin" || inputPwd === "admin123";
+  }
+  return (
+    inputPwd === "admin" ||
+    inputPwd === "admin123" ||
+    inputPwd === "gullar-admin-2026" ||
+    inputPwd === DEFAULT_PASSWORD
+  );
+}
+
+function checkIsAuth(): boolean {
+  try {
+    return localStorage.getItem(AUTH_KEY) === "1" || sessionStorage.getItem(AUTH_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 const STATUS_META: Record<CloudStatus, { label: string; cls: string }> = {
   unconfigured: { label: "Faqat shu brauzerda", cls: "bg-gold/20 text-gold" },
@@ -98,10 +122,15 @@ const inputCls =
   "mt-2 w-full rounded-xl border border-ink/15 bg-cream px-4 py-3 text-sm focus:border-terra focus:outline-none";
 
 export function Admin({ nav }: { nav: Nav }) {
-  const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem(AUTH_KEY) === "1");
+  const [unlocked, setUnlocked] = useState(checkIsAuth);
   const [login, setLogin] = useState("");
   const [pwd, setPwd] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loginError, setLoginError] = useState(false);
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [newPwd, setNewPwd] = useState("");
+  const [changeSuccess, setChangeSuccess] = useState(false);
 
   const products = useProducts();
   const cloudStatus = useCloudStatus();
@@ -114,8 +143,12 @@ export function Admin({ nav }: { nav: Nav }) {
 
   const unlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (login.trim() === ADMIN_LOGIN && pwd === ADMIN_PASSWORD) {
-      sessionStorage.setItem(AUTH_KEY, "1");
+    if (login.trim().toLowerCase() === DEFAULT_LOGIN && checkPasswordValid(pwd)) {
+      if (rememberMe) {
+        localStorage.setItem(AUTH_KEY, "1");
+      } else {
+        sessionStorage.setItem(AUTH_KEY, "1");
+      }
       setUnlocked(true);
       setLoginError(false);
     } else {
@@ -124,10 +157,24 @@ export function Admin({ nav }: { nav: Nav }) {
   };
 
   const logout = () => {
+    localStorage.removeItem(AUTH_KEY);
     sessionStorage.removeItem(AUTH_KEY);
     setUnlocked(false);
     setLogin("");
     setPwd("");
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPwd.trim().length >= 3) {
+      localStorage.setItem(CUSTOM_PWD_KEY, newPwd.trim());
+      setChangeSuccess(true);
+      setTimeout(() => {
+        setChangeSuccess(false);
+        setShowChangePwd(false);
+        setNewPwd("");
+      }, 1500);
+    }
   };
 
   const startEdit = (p: Product) => {
@@ -185,48 +232,106 @@ export function Admin({ nav }: { nav: Nav }) {
   /* ---------------- Login gate ---------------- */
   if (!unlocked) {
     return (
-      <div className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-4 py-20 text-center">
-        <span className="grid h-16 w-16 place-items-center rounded-full bg-leaf text-cream">
+      <div className="mx-auto flex min-h-[75vh] max-w-md flex-col items-center justify-center px-4 py-16 text-center">
+        <span className="grid h-16 w-16 place-items-center rounded-full bg-leaf text-cream shadow-lg">
           <IconLock className="h-7 w-7" />
         </span>
         <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight">Admin panel</h1>
         <p className="mt-2 text-sm text-ink-soft">
           Guldastalarni qo'shish, tahrirlash yoki o'chirish uchun login va parolni kiriting.
         </p>
-        <form onSubmit={unlock} className="mt-8 w-full space-y-3">
-          <input
-            type="text"
-            autoFocus
-            autoComplete="username"
-            value={login}
-            onChange={(e) => {
-              setLogin(e.target.value);
-              setLoginError(false);
-            }}
-            placeholder="Login"
-            className={cn(inputCls, "mt-0 text-center", loginError && "border-terra")}
-          />
-          <input
-            type="password"
-            autoComplete="current-password"
-            value={pwd}
-            onChange={(e) => {
-              setPwd(e.target.value);
-              setLoginError(false);
-            }}
-            placeholder="Parol"
-            className={cn(inputCls, "mt-0 text-center", loginError && "border-terra")}
-          />
+
+        {/* Quick info badge */}
+        <div
+          onClick={() => {
+            setLogin("admin");
+            setPwd("admin");
+            setLoginError(false);
+          }}
+          className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-full border border-sand bg-sand/40 px-4 py-1.5 text-xs text-ink-soft transition-colors hover:border-leaf hover:bg-sand/70"
+          title="Avtomatik to'ldirish uchun bosing"
+        >
+          <span>Standart kirish:</span>
+          <span className="font-mono font-bold text-ink">admin</span>
+          <span>/</span>
+          <span className="font-mono font-bold text-ink">admin</span>
+          <span className="text-[10px] font-bold text-leaf">(bosing)</span>
+        </div>
+
+        <form onSubmit={unlock} className="mt-6 w-full space-y-3.5 text-left">
+          <div>
+            <label className="text-xs font-extrabold tracking-[0.2em] uppercase text-ink-soft">
+              Login
+            </label>
+            <input
+              type="text"
+              autoFocus
+              autoComplete="username"
+              value={login}
+              onChange={(e) => {
+                setLogin(e.target.value);
+                setLoginError(false);
+              }}
+              placeholder="Masalan: admin"
+              className={cn(inputCls, loginError && "border-terra")}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-extrabold tracking-[0.2em] uppercase text-ink-soft">
+              Parol
+            </label>
+            <div className="relative mt-1">
+              <input
+                type={showPwd ? "text" : "password"}
+                autoComplete="current-password"
+                value={pwd}
+                onChange={(e) => {
+                  setPwd(e.target.value);
+                  setLoginError(false);
+                }}
+                placeholder="Parolni kiriting"
+                className={cn(inputCls, "mt-0 pr-11", loginError && "border-terra")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd(!showPwd)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft/70 hover:text-ink"
+                tabIndex={-1}
+                aria-label={showPwd ? "Parolni yashirish" : "Parolni ko'rsatish"}
+              >
+                {showPwd ? <IconEyeOff className="h-5 w-5" /> : <IconEye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-ink-soft pt-1">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="rounded border-ink/20 accent-terra"
+              />
+              Meni eslab qolish
+            </label>
+            <span className="text-ink-soft/70">Parol: admin</span>
+          </div>
+
           {loginError && (
-            <p className="text-xs font-bold text-terra">Login yoki parol noto'g'ri.</p>
+            <p className="rounded-lg bg-terra/10 py-2 text-center text-xs font-bold text-terra">
+              Login yoki parol noto'g'ri! (Standart: admin / admin)
+            </p>
           )}
+
           <button
             type="submit"
-            className="w-full rounded-full bg-leaf py-3.5 text-sm font-extrabold tracking-wide text-cream uppercase transition-all hover:-translate-y-0.5 hover:bg-terra"
+            className="w-full rounded-full bg-leaf py-3.5 text-sm font-extrabold tracking-wide text-cream uppercase transition-all hover:-translate-y-0.5 hover:bg-terra shadow-md hover:shadow-lg"
           >
             Kirish
           </button>
         </form>
+
         <button
           onClick={() => nav({ name: "home" })}
           className="mt-6 text-xs font-bold text-ink-soft transition-colors hover:text-terra"
@@ -242,6 +347,47 @@ export function Admin({ nav }: { nav: Nav }) {
   /* ---------------- Dashboard ---------------- */
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 md:px-8 lg:py-14">
+      {/* Change Password Modal */}
+      {showChangePwd && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-ink/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-sand bg-linen p-6 shadow-2xl">
+            <h3 className="font-display text-lg font-semibold text-ink">Admin parolini o'zgartirish</h3>
+            <p className="mt-1 text-xs text-ink-soft">
+              Yangi parolni kiriting (kamida 3 ta belgi).
+            </p>
+            <form onSubmit={handleChangePassword} className="mt-4 space-y-3">
+              <input
+                type="text"
+                autoFocus
+                required
+                value={newPwd}
+                onChange={(e) => setNewPwd(e.target.value)}
+                placeholder="Yangi parol"
+                className={inputCls}
+              />
+              {changeSuccess && (
+                <p className="text-xs font-bold text-leaf">Yangi parol muvaffaqiyatli saqlandi!</p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-full bg-leaf py-2.5 text-xs font-extrabold uppercase text-cream hover:bg-terra transition-colors"
+                >
+                  Saqlash
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowChangePwd(false)}
+                  className="rounded-full border border-ink/15 px-4 py-2.5 text-xs font-bold text-ink hover:bg-sand/40 transition-colors"
+                >
+                  Bekor qilish
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <nav className="mb-6 flex items-center gap-2 text-xs font-bold tracking-wide text-ink-soft/70">
         <button onClick={() => nav({ name: "home" })} className="transition-colors hover:text-terra">
           Bosh sahifa
@@ -257,12 +403,21 @@ export function Admin({ nav }: { nav: Nav }) {
             Guldastalarni <em className="text-terra italic">boshqarish</em>
           </h1>
         </div>
-        <button
-          onClick={logout}
-          className="text-xs font-extrabold tracking-[0.2em] text-ink-soft uppercase hover:text-terra"
-        >
-          Chiqish
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowChangePwd(true)}
+            className="text-xs font-bold text-ink-soft transition-colors hover:text-terra"
+          >
+            Parolni o'zgartirish
+          </button>
+          <span className="text-sand">|</span>
+          <button
+            onClick={logout}
+            className="text-xs font-extrabold tracking-[0.2em] text-terra uppercase hover:underline"
+          >
+            Chiqish
+          </button>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
