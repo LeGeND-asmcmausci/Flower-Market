@@ -16,7 +16,7 @@ from telegram.ext import (
 )
 
 # Bot tokeni va Vercel-dagi Mini App manzili
-TOKEN = "8899287838:AAHYUFasyeP8z6cKxLnbsLb1yF9dQvJUab0"
+TOKEN = "8899287838:AAFbezILZXhtnCCVjqwQADQC6E7CxzuD2oc"
 WEB_APP_URL = "https://flower-market-olive.vercel.app/"
 
 # Loglarni sozlash
