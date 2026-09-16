@@ -114,14 +114,6 @@ export function Footer({ nav }: { nav: Nav }) {
             <p>
               React + Tailwind CSS bilan <span className="text-rose">qo'l mehnati</span> bilan yaratildi
             </p>
-            <span>·</span>
-            <button
-              onClick={() => nav({ name: "admin" })}
-              className="text-cream/40 transition-colors hover:text-cream hover:underline"
-              title="Admin panelga kirish"
-            >
-              Admin
-            </button>
           </div>
         </div>
       </div>
