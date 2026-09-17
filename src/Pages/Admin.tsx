@@ -126,7 +126,7 @@ export function Admin({ nav }: { nav: Nav }) {
   const [login, setLogin] = useState("");
   const [pwd, setPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState(false);
   const [showChangePwd, setShowChangePwd] = useState(false);
   const [newPwd, setNewPwd] = useState("");
