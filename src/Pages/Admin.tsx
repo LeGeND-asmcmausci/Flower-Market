@@ -16,9 +16,7 @@ import {
   removeProduct,
   resetProducts,
   updateProduct,
-  useCloudStatus,
   useProducts,
-  type CloudStatus,
 } from "../Data/Store";
 import {
   IconCheck,
@@ -59,12 +57,6 @@ function checkIsAuth(): boolean {
   }
 }
 
-const STATUS_META: Record<CloudStatus, { label: string; cls: string }> = {
-  unconfigured: { label: "Faqat shu brauzerda", cls: "bg-gold/20 text-gold" },
-  syncing: { label: "Sinxronlanmoqda…", cls: "bg-sand/60 text-ink-soft" },
-  synced: { label: "Bulutga saqlandi", cls: "bg-leaf/15 text-leaf" },
-  error: { label: "Bulutga ulanmadi", cls: "bg-terra/15 text-terra" },
-};
 
 type FormState = {
   name: string;
@@ -133,7 +125,6 @@ export function Admin({ nav }: { nav: Nav }) {
   const [changeSuccess, setChangeSuccess] = useState(false);
 
   const products = useProducts();
-  const cloudStatus = useCloudStatus();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
@@ -341,8 +332,6 @@ export function Admin({ nav }: { nav: Nav }) {
       </div>
     );
   }
-
-  const status = STATUS_META[cloudStatus];
 
   /* ---------------- Dashboard ---------------- */
   return (
