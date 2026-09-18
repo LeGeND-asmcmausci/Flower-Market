@@ -420,23 +420,6 @@ export function Admin({ nav }: { nav: Nav }) {
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <span className={cn("rounded-full px-3.5 py-1.5 text-[11px] font-extrabold tracking-wide", status.cls)}>
-          {status.label}
-        </span>
-        {cloudStatus === "unconfigured" && (
-          <span className="text-xs text-ink-soft">
-            Bulut sozlanmagan — o'zgarishlar faqat shu brauzerda saqlanadi. Sozlash uchun README'dagi
-            JSONBin qadamlarini bajaring (VITE_JSONBIN_KEY, VITE_JSONBIN_BIN).
-          </span>
-        )}
-        {cloudStatus === "error" && (
-          <span className="text-xs text-ink-soft">
-            Bulutga ulanib bo'lmadi — o'zgarishlar shu brauzerda saqlanib turadi.
-          </span>
-        )}
-      </div>
-
       <div className="mt-10 grid gap-10 lg:grid-cols-[420px_1fr]">
         <div className="lg:sticky lg:top-28 lg:self-start">
           <div className="rounded-2xl border border-sand bg-linen p-6">
