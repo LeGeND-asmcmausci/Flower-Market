@@ -44,7 +44,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     welcome_text = (
         f"Assalomu alaykum, <b>{user.first_name}</b>! 🌸\n\n"
-        f"<b>GULLAR</b> — Toshkentdagi bejirim gullar ustaxonasiga xush kelibsiz.\n\n"
+        f"<b>GULLAR</b> — Toshkentdagi bejirim gullar marketiga xush kelibsiz.\n\n"
         f"✨ Tayyor guldastalar va xit buketlar\n"
         f"🚀 60 daqiqada shahar bo'ylab yetkazib berish\n\n"
         f"Gullarni tanlash uchun pastdagi tugmani bosing:"
